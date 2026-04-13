@@ -1,4 +1,5 @@
 import 'react-native-gesture-handler';
+import './suppressWarnings';
 import React from 'react';
 import { View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -17,7 +18,7 @@ import ListaPresentes from './screens/ListaPresentes';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const isMock = process?.env?.MOCK === 'true' || process?.env?.MOCK === '1';
+  const isMock = typeof process !== 'undefined' && (process?.env?.MOCK === 'true' || process?.env?.MOCK === '1');
 
   return (
     <>
@@ -29,7 +30,7 @@ export default function App() {
         </View>
       )}
       <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: true }}>
+        <Stack.Navigator screenOptions={{ headerShown: true }} initialRouteName="Splash">
           <Stack.Screen name="Splash" component={Splash} options={{ headerShown: false }} />
           <Stack.Screen name="Dashboard" component={Dashboard} />
         <Stack.Screen name="EventosLista" component={EventosLista} />

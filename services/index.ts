@@ -14,19 +14,25 @@ const Remote = {
     list: async () => { throw new Error('Remote API not implemented'); },
     get: async () => { throw new Error('Remote API not implemented'); },
     create: async () => { throw new Error('Remote API not implemented'); },
+    update: async () => { throw new Error('Remote API not implemented'); },
     delete: async () => { throw new Error('Remote API not implemented'); },
   },
   PresentAPI: {
     list: async () => { throw new Error('Remote API not implemented'); },
-    reserve: async () => { throw new Error('Remote API not implemented'); },
+    get: async () => { throw new Error('Remote API not implemented'); },
+    create: async () => { throw new Error('Remote API not implemented'); },
+    update: async () => { throw new Error('Remote API not implemented'); },
+    delete: async () => { throw new Error('Remote API not implemented'); },
+    markAsPurchased: async () => { throw new Error('Remote API not implemented'); },
   }
 };
 
 // Prefer mock services by default. Only use Remote when REMOTE is explicitly set to 'true' or '1'.
 let services = Mock;
 try {
-  const remoteFlag = (process.env.REMOTE === 'true' || process.env.REMOTE === '1');
-  if (remoteFlag) services = Remote;
+  if (typeof process !== 'undefined' && process?.env?.REMOTE === 'true') {
+    services = Remote;
+  }
 } catch (e) {
   // In some bundlers process.env may be undefined; default to Mock
   services = Mock;

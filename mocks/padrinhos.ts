@@ -1,30 +1,56 @@
-type Padrinho = { id: string; name: string; phone?: string; email?: string };
+import { logger } from '../utils/logger';
+import { db } from './database';
 
-let DB: Padrinho[] = [
-  { id: 'p1', name: 'Carlos Silva', phone: '99999-0001' },
-  { id: 'p2', name: 'Mariana Rocha', phone: '99999-0002' },
-];
-
-export const listPadrinhos = async (): Promise<Padrinho[]> => {
+export const listPadrinhos = async () => {
   await new Promise((r) => setTimeout(r, 100));
-  return [...DB];
+  const result = [...db.padrinhos];
+  logger.debug('PadrinhosMock', `listPadrinhos: returning ${result.length} padrinhos`);
+  return result;
 };
 
-export const getPadrinho = async (id: string): Promise<Padrinho | null> => {
+export const getPadrinho = async (id: string) => {
   await new Promise((r) => setTimeout(r, 80));
-  return DB.find((d) => d.id === id) ?? null;
+  const result = db.padrinhos.find((d) => d.id === id) ?? null;
+  logger.debug('PadrinhosMock', `getPadrinho(${id}): found = ${result ? 'yes' : 'no'}`);
+  return result;
 };
 
-export const createPadrinho = async (payload: Partial<Padrinho>): Promise<Padrinho> => {
-  const item = { id: String(Date.now()), name: payload.name || 'Novo padrinho', phone: payload.phone } as Padrinho;
-  DB = [item, ...DB];
+export const createPadrinho = async (payload: any) => {
+  const item = { id: String(Date.now()), name: payload.name || 'Novo padrinho', phone: payload.phone };
+  db.padrinhos = [item, ...db.padrinhos];
+  logger.info('PadrinhosMock', `createPadrinho: created new padrinho with id=${item.id}, name=${item.name}, phone=${item.phone || 'none'}`);
+  logger.debug('PadrinhosMock', `DB now has ${db.padrinhos.length} padrinhos`);
   return item;
 };
 
-export const deletePadrinho = async (id: string): Promise<boolean> => {
-  const before = DB.length;
-  DB = DB.filter((d) => d.id !== id);
-  return DB.length < before;
+export const updatePadrinho = async (id: string, payload: any) => {
+  let updated = null;
+  db.padrinhos = db.padrinhos.map((d) => {
+    if (d.id === id) {
+      updated = { ...d, ...payload };
+      return updated;
+    }
+    return d;
+  });
+  if (updated) {
+    logger.info('PadrinhosMock', `updatePadrinho(${id}): updated to name=${(updated as any).name}`);
+  } else {
+    logger.warn('PadrinhosMock', `updatePadrinho(${id}): padrinho not found`);
+  }
+  return updated;
 };
 
-export default { listPadrinhos, getPadrinho, createPadrinho, deletePadrinho };
+export const deletePadrinho = async (id: string) => {
+  await new Promise((r) => setTimeout(r, 100));
+  const before = db.padrinhos.length;
+  db.padrinhos = db.padrinhos.filter((d) => d.id !== id);
+  const deleted = db.padrinhos.length < before;
+  if (deleted) {
+    logger.info('PadrinhosMock', `deletePadrinho(${id}): DELETED successfully ✓ DB now has ${db.padrinhos.length} padrinhos`);
+  } else {
+    logger.warn('PadrinhosMock', `deletePadrinho(${id}): padrinho not found`);
+  }
+  return deleted;
+};
+
+export default { listPadrinhos, getPadrinho, createPadrinho, updatePadrinho, deletePadrinho };

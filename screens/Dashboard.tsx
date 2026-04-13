@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import styles, { colors } from '../styles';
 import { EventAPI } from '../services';
+import { formatDateToBR } from '../utils/dateFormatter';
+import { logger } from '../utils/logger';
 
 const logo = require('../assets/logo.png');
 
@@ -9,9 +12,6 @@ const FEATURES = [
   { id: 'f_events', title: 'Eventos', screen: 'EventosLista', icon: '🎉' },
   { id: 'f_gifts', title: 'Presentes', screen: 'ListaPresentes', icon: '🎁' },
   { id: 'f_sponsors', title: 'Padrinhos', screen: 'PadrinhosLista', icon: '🤝' },
-  { id: 'f_new', title: 'Novo evento', screen: 'CadastroEventos', icon: '＋' },
-  { id: 'f_profile', title: 'Perfil', screen: 'Dashboard', icon: '👤' },
-  { id: 'f_settings', title: 'Ajustes', screen: 'Dashboard', icon: '⚙️' },
 ];
 
 export default function Dashboard({ navigation }: any) {
@@ -23,8 +23,10 @@ export default function Dashboard({ navigation }: any) {
     setLoading(true);
     try {
       const list = await EventAPI.list();
+      logger.info('Dashboard', `Loaded ${list.length} upcoming events`);
       setEvents(list);
     } catch (e) {
+      logger.error('Dashboard', 'Error loading events', e as Error);
       setEvents([]);
     } finally {
       setLoading(false);
@@ -33,14 +35,17 @@ export default function Dashboard({ navigation }: any) {
 
   useEffect(() => { load(); }, [load]);
 
+  useFocusEffect(
+    useCallback(() => {
+      logger.info('Dashboard', 'Screen focused - refreshing events');
+      load();
+    }, [load])
+  );
+
   const onRefresh = async () => {
     setRefreshing(true);
     await load();
     setRefreshing(false);
-  };
-
-  const formatDate = (iso: string) => {
-    try { return new Date(iso).toLocaleDateString('pt-BR'); } catch { return iso; }
   };
 
   return (
@@ -48,13 +53,16 @@ export default function Dashboard({ navigation }: any) {
       <View style={{ alignItems: 'center', marginBottom: 18 }}>
         <Image source={logo} style={{ width: 88, height: 88 }} resizeMode="contain" />
         <Text style={{ fontSize: 20, fontWeight: '700', marginTop: 8 }}>Casaki</Text>
-        <Text style={{ color: colors.muted, marginTop: 4 }}>Gerencie seus eventos e lista de presentes</Text>
+        <Text style={{ color: colors.muted, marginTop: 4, textAlign: 'center' }}>Gerencie seus eventos, padrinhos e lista de presentes</Text>
       </View>
 
-      <Text style={styles.sectionTitle}>Recursos</Text>
+      <Text style={styles.sectionTitle}>Funcionalidades</Text>
       <View style={{ marginBottom: 12 }}>
         {FEATURES.map((f) => (
-          <TouchableOpacity key={f.id} style={styles.card} onPress={() => navigation.navigate(f.screen)}>
+          <TouchableOpacity key={f.id} style={styles.card} onPress={() => {
+            logger.debug('Dashboard', `Navigate to ${f.screen}`);
+            navigation.navigate(f.screen);
+          }}>
             <View style={styles.cardIconRow}>
               <View style={[styles.cardIcon, { backgroundColor: '#EEF2FF' }]}>
                 <Text style={styles.cardIconText}>{f.icon}</Text>
@@ -62,25 +70,37 @@ export default function Dashboard({ navigation }: any) {
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.cardTitle}>{f.title}</Text>
               </View>
+              <Text style={{ color: colors.muted }}>→</Text>
             </View>
           </TouchableOpacity>
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>Próximos eventos</Text>
-      {loading ? <ActivityIndicator /> : events.map((e) => (
-        <TouchableOpacity key={e.id} style={styles.card} onPress={() => navigation.navigate('EventoDetail', { id: e.id })}>
-          <View style={styles.cardIconRow}>
-            <View style={[styles.cardIcon, { backgroundColor: '#EFEBFF' }]}>
-              <Text style={styles.cardIconText}>📅</Text>
+      <Text style={styles.sectionTitle}>Próximos Eventos</Text>
+      {loading ? (
+        <ActivityIndicator />
+      ) : events.length === 0 ? (
+        <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+          <Text style={{ color: '#999' }}>Nenhum evento cadastrado</Text>
+        </View>
+      ) : (
+        events.map((e) => (
+          <TouchableOpacity key={e.id} style={styles.card} onPress={() => {
+            logger.debug('Dashboard', `Navigate to EventoDetail: ${e.id}`);
+            navigation.navigate('EventoDetail', { id: e.id });
+          }}>
+            <View style={styles.cardIconRow}>
+              <View style={[styles.cardIcon, { backgroundColor: '#EFEBFF' }]}>
+                <Text style={styles.cardIconText}>📅</Text>
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.cardTitle}>{e.title}</Text>
+                <Text style={styles.cardMeta}>{formatDateToBR(e.date)} • {e.location || 'Local não especificado'}</Text>
+              </View>
             </View>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.cardTitle}>{e.title}</Text>
-              <Text style={styles.cardMeta}>{formatDate(e.date)} • {e.location}</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      ))}
+          </TouchableOpacity>
+        ))
+      )}
 
     </ScrollView>
   );

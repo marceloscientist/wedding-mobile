@@ -4,17 +4,24 @@
     "module": "ESNext",
     "jsx": "react-jsx",
     "strict": true,
+    "ignoreDeprecations": "6.0",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "allowJs": true
+    "allowJs": true,
+    "types": [
+      "jest",
+      "@testing-library/jest-native",
+      "node"
+    ]
   },
   "exclude": [
     "node_modules",
     "babel.config.js",
     "metro.config.js",
-    "jest.config.js"
-  ],
-  "extends": "expo/tsconfig.base"
+    "jest.config.js",
+    "__tests__"
+  ]
 }
+

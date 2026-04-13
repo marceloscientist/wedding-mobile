@@ -1,8 +1,11 @@
+import { logger } from '../utils/logger';
+
 export type EventPayload = {
   title: string;
   date: string; // ISO YYYY-MM-DD
   location?: string;
   description?: string;
+  guests?: number;
 };
 
 export type ValidationResult = {
@@ -25,7 +28,7 @@ export function validateEvent(payload: Partial<EventPayload>): ValidationResult 
     // basic YYYY-MM-DD check
     const m = payload.date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (!m) {
-      errors.date = 'Formato da data inválido (use YYYY-MM-DD)';
+      errors.date = 'Formato inválido (use YYYY-MM-DD)';
     } else {
       const y = Number(m[1]), mo = Number(m[2]) - 1, d = Number(m[3]);
       const dt = new Date(y, mo, d);
@@ -35,12 +38,25 @@ export function validateEvent(payload: Partial<EventPayload>): ValidationResult 
     }
   }
 
-  // optional location length check
   if (payload.location && payload.location.length > 200) {
-    errors.location = 'Local muito longo';
+    errors.location = 'Local muito longo (máx 200 caracteres)';
   }
 
-  return { valid: Object.keys(errors).length === 0, errors };
+  if (payload.guests !== undefined && payload.guests !== null) {
+    if (payload.guests < 0) {
+      errors.guests = 'Número de convidados não pode ser negativo';
+    } else if (!Number.isInteger(payload.guests)) {
+      errors.guests = 'Número de convidados deve ser um número inteiro';
+    }
+  }
+
+  const valid = Object.keys(errors).length === 0;
+  if (!valid) {
+    logger.warn('eventValidator', 'Validation failed', errors);
+  } else {
+    logger.debug('eventValidator', 'Validation passed', { title: payload.title });
+  }
+  return { valid, errors };
 }
 
 export default { validateEvent };
